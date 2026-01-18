@@ -72,7 +72,6 @@ async def main():
     print(f"Max connections     : {pool.max_connections}")
     print(f"Total requests      : {TOTAL_REQUESTS}")
     print(f"Timeouts            : {pool.timeout_count}")
-    print(f"Average wait time   : {pool.average_wait_time:.2f}s")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,113 @@
-.venv/
+############################
+# Python
+############################
+
+# Byte-compiled / optimized
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python packaging
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+############################
+# Editor / IDE
+############################
+
+# VS Code
+.vscode/
+
+# Cursor
+.cursor/
+
+# IntelliJ / PyCharm
+.idea/
+
+# Vim
+*.swp
+*.swo
+*.swn
+
+# macOS
+.DS_Store
+
+############################
+# Logs
+############################
+
+*.log
+logs/
+*.out
+
+############################
+# Docker
+############################
+
+# Local docker overrides
+docker-compose.override.yml
+
+# Docker temp files
+*.pid
+
+############################
+# Prometheus
+############################
+
+# Prometheus TSDB (WAL, chunks, index)
+data/
+prometheus/data/
+**/chunks_head/
+**/wal/
+
+############################
+# Grafana
+############################
+
+# Local Grafana state
+grafana/data/
+grafana/plugins/
+
+############################
+# Load test artifacts
+############################
+
+# Custom loadgen outputs
+loadgen/results/
+loadgen/*.csv
+loadgen/*.json
+
+############################
+# Runtime / temp
+############################
+
+tmp/
+temp/
+.cache/
+
+############################
+# Environment variables
+############################
+
 .env
 .env.*
+!.env.example
+
+############################
+# OS-specific
+############################
+
+Thumbs.db

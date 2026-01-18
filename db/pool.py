@@ -1,12 +1,31 @@
 import asyncio
 import time
 from typing import Optional
+from prometheus_client import Gauge, Counter
+
+# ------------------------------
+# Prometheus metrics
+# ------------------------------
+
+DB_POOL_ACTIVE = Gauge(
+    "db_pool_active_connections",
+    "Active DB connections"
+)
+
+DB_POOL_WAITING = Gauge(
+    "db_pool_waiting_requests",
+    "Requests waiting for DB connection"
+)
+
+DB_POOL_TIMEOUTS = Counter(
+    "db_pool_timeouts_total",
+    "DB connection acquire timeouts"
+)
 
 
 class PoolTimeout(Exception):
     """Raised when a connection cannot be acquired within the timeout."""
     pass
-
 
 class ConnectionPool:
     """
@@ -14,19 +33,13 @@ class ConnectionPool:
 
     This models the finite willingness of the application to issue concurrent
     database requests. It is intentionally simple and explicit.
-
-    Key behaviors:
-    - Fixed maximum concurrency
-    - Blocking acquisition
-    - Optional timeout while waiting
-    - Explicit visibility into waiting vs active work
     """
 
     def __init__(self, max_connections: int):
         self._max_connections = max_connections
         self._semaphore = asyncio.Semaphore(max_connections)
 
-        # Metrics / state (intentionally simple, no framework bindings)
+        # Metrics / state
         self._active = 0
         self._waiting = 0
 
@@ -44,23 +57,15 @@ class ConnectionPool:
 
     @property
     def active(self) -> int:
-        """Number of connections currently in use."""
         return self._active
 
     @property
     def waiting(self) -> int:
-        """Number of requests currently waiting to acquire a connection."""
         return self._waiting
 
     @property
     def timeout_count(self) -> int:
         return self._timeout_count
-
-    @property
-    def average_wait_time(self) -> float:
-        if self._acquire_count == 0:
-            return 0.0
-        return self._total_wait_time / self._acquire_count
 
     async def acquire(self, timeout: Optional[float] = None):
         """
@@ -73,8 +78,16 @@ class ConnectionPool:
         """
         start = time.monotonic()
 
+        # ---- waiting begins ----
         async with self._lock:
             self._waiting += 1
+            DB_POOL_WAITING.set(self._waiting)
+
+        print(
+            f"[POOL_WAIT] "
+            f"active={self._active} "
+            f"waiting={self._waiting}"
+        )
 
         try:
             if timeout is None:
@@ -85,23 +98,54 @@ class ConnectionPool:
                 except asyncio.TimeoutError:
                     async with self._lock:
                         self._timeout_count += 1
-                    raise PoolTimeout(f"Timed out acquiring connection after {timeout}s")
+                        DB_POOL_TIMEOUTS.inc()
+
+                    print(
+                        f"[POOL_TIMEOUT] "
+                        f"waited={time.monotonic() - start:.3f}s "
+                        f"max={self._max_connections} "
+                        f"active={self._active} "
+                        f"waiting={self._waiting}"
+                    )
+
+                    raise PoolTimeout(
+                        f"Timed out acquiring connection after {timeout}s"
+                    )
+
         finally:
             wait_time = time.monotonic() - start
             async with self._lock:
                 self._waiting -= 1
                 self._total_wait_time += wait_time
                 self._acquire_count += 1
+                DB_POOL_WAITING.set(self._waiting)
 
+        # ---- acquisition succeeded ----
         async with self._lock:
             self._active += 1
+            DB_POOL_ACTIVE.set(self._active)
+
+        print(
+            f"[POOL_ACQUIRE] "
+            f"waited={wait_time:.3f}s "
+            f"active={self._active} "
+            f"waiting={self._waiting}"
+        )
 
         return _PoolConnection(self)
 
     async def _release(self):
         async with self._lock:
             self._active -= 1
+            DB_POOL_ACTIVE.set(self._active)
+
         self._semaphore.release()
+
+        print(
+            f"[POOL_RELEASE] "
+            f"active={self._active} "
+            f"waiting={self._waiting}"
+        )
 
 
 class _PoolConnection:

@@ -1,9 +1,26 @@
 import asyncio
 import os
 from typing import Any, Callable, Awaitable
+from prometheus_client import Counter
+
 
 CONTAINED_CACHE = os.getenv("CONTAINED_CACHE", "0") == "1"
 MAX_CONCURRENT_LOADS = int(os.getenv("CACHE_MAX_LOADS", "5"))
+
+# ------------------------------
+# Prometheus metrics
+# ------------------------------
+
+CACHE_HITS = Counter(
+    "cache_hits_total",
+    "Total cache hits"
+)
+
+CACHE_MISSES = Counter(
+    "cache_misses_total",
+    "Total cache misses"
+)
+
 
 class Cache:
     """
@@ -49,28 +66,48 @@ class Cache:
         # Fast path: check cache without lock
         if key in self._store:
             self.hits += 1
-            return [self._store[key], 1, 0] # value, hit, miss
+            CACHE_HITS.inc()
 
-        # Miss path
+            return [self._store[key], 1, 0]  # value, hit, miss
+
+        # ---- cache miss ----
         self.misses += 1
+        CACHE_MISSES.inc()
+
+        print(
+            f"[CACHE_MISS] "
+            f"key={key} "
+            f"mode={'CONTAINED' if self._contained else 'SPEED_FIRST'}"
+        )
 
         # ---- CONTAINMENT TOGGLE ----
         if self._contained:
-            # Database calls are gated by the semaphore
+            # Waiting happens HERE instead of DB pool
+            print(
+                f"[CACHE_WAIT] "
+                f"key={key} "
+                f"in_flight={self._load_semaphore._value}"
+            )
+
             async with self._load_semaphore:
                 value = await loader()
+
         else:
-            # Call database immediately (speed-first)
+            # Waiting happens downstream (DB pool)
             value = await loader()
 
         # Store result (protected to avoid race corruption)
         async with self._lock:
-            # Double-check not required for correctness here,
-            # but avoids overwriting if another request filled it.
             if key not in self._store:
                 self._store[key] = value
 
-        return [value, 0, 1] # value, hit, miss
+        print(
+            f"[CACHE_FILL] "
+            f"key={key}"
+        )
+
+        return [value, 0, 1]  # value, hit, miss
+
 
     def clear(self):
         size = len(self._store)

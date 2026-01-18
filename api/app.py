@@ -2,9 +2,17 @@ import asyncio
 import time
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 
 from cache.cache import Cache
+
+
+from prometheus_client import (
+    Counter,
+    Histogram,
+    generate_latest,
+    CONTENT_TYPE_LATEST,
+)
 
 
 # ----------------------------
@@ -13,6 +21,22 @@ from cache.cache import Cache
 
 DB_URL = "http://localhost:8001/db_query"
 DB_TIMEOUT_SECONDS = 2.0
+
+# ------------------------------
+# Prometheus metrics
+# ------------------------------
+
+REQUEST_COUNT = Counter(
+    "api_requests_total",
+    "Total API requests",
+    ["method", "path", "status"]
+)
+
+REQUEST_LATENCY = Histogram(
+    "api_request_latency_seconds",
+    "API request latency",
+    buckets=(0.05, 0.1, 0.2, 0.5, 1, 2, 5)
+)
 
 
 # ----------------------------
@@ -36,11 +60,12 @@ async def health():
         "cache_misses": cache.misses,
     }
 
-
 @app.get("/item/{item_id}")
 async def get_item(item_id: int):
     key = f"item:{item_id}"
     start = time.monotonic()
+
+    status = "200"
 
     async def load_from_db():
         async with httpx.AsyncClient() as client:
@@ -63,21 +88,39 @@ async def get_item(item_id: int):
 
         return resp.json()
 
-    [value, hit, miss] = await cache.get(key, load_from_db)
+    try:
+        value, hit, miss = await cache.get(key, load_from_db)
 
-    elapsed = time.monotonic() - start
+        return {
+            "item_id": item_id,
+            "value": value,
+        }
 
-    print(
-        f"[CACHE] hit={hit} "
-        f"miss={miss} "
-        f"cache_hits={cache.hits} "
-        f"cache_misses={cache.misses} "
-    )
-    return {
-        "item_id": item_id,
-        "latency_seconds": round(elapsed, 3),
-        "value": value,
-    }
+    except HTTPException:
+        status = "503"
+        raise
+
+    finally:
+        elapsed = time.monotonic() - start
+
+        # ---- Prometheus ----
+        REQUEST_LATENCY.observe(elapsed)
+        REQUEST_COUNT.labels(
+            method="GET",
+            path="/item/{id}",
+            status=status
+        ).inc()
+
+        # ---- Logs (human-first) ----
+        print(
+            f"[API] "
+            f"item={item_id} "
+            f"status={status} "
+            f"elapsed={elapsed:.3f}s "
+            f"hit={hit if status == '200' else '-'} "
+            f"miss={miss if status == '200' else '-'}"
+        )
+
 
 @app.post("/_control/clear_cache")
 async def clear_cache():
@@ -88,3 +131,11 @@ async def clear_cache():
         "cache_hits": cache.hits,
         "cache_misses": cache.misses,
     }
+
+# Prometheus instrumented metrics exposed for collection by prometheus server
+@app.get("/metrics")
+def metrics():
+    return Response(
+        generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
+    )

@@ -1,7 +1,7 @@
 import asyncio
 import time
-from fastapi import FastAPI, HTTPException
-
+from fastapi import FastAPI, HTTPException, Response
+from prometheus_client import Histogram, generate_latest, CONTENT_TYPE_LATEST
 from db.pool import ConnectionPool, PoolTimeout
 
 
@@ -12,6 +12,17 @@ from db.pool import ConnectionPool, PoolTimeout
 POOL_SIZE = 5
 QUERY_LATENCY_SECONDS = 0.2
 ACQUIRE_TIMEOUT_SECONDS = 0.5
+
+# ------------------------------
+# Prometheus metrics
+# ------------------------------
+
+DB_QUERY_LATENCY = Histogram(
+    "db_query_latency_seconds",
+    "DB query latency",
+    buckets=(0.05, 0.1, 0.2, 0.5, 1, 2)
+)
+
 
 
 # ----------------------------
@@ -42,10 +53,14 @@ async def db_query(item_id: int):
     Simulates a database query guarded by an application-side
     connection pool.
 
-    This endpoint is intentionally simple:
+    Lifecycle:
     - acquire connection
     - do work
     - release connection
+
+    Observability:
+    - latency histogram (Prometheus)
+    - structured, human-readable pool logs
     """
     start = time.monotonic()
 
@@ -55,24 +70,32 @@ async def db_query(item_id: int):
             await asyncio.sleep(QUERY_LATENCY_SECONDS)
 
     except PoolTimeout:
+        elapsed = time.monotonic() - start
+
         print(
-                f"[POOL] max={pool.max_connections} "
-                f"active={pool.active} "
-                f"waiting={pool.waiting}"
-                f"timeout_count={pool.timeout_count}"
-            )
+            f"[DB_TIMEOUT] "
+            f"elapsed={elapsed:.3f}s "
+            f"max={pool.max_connections} "
+            f"active={pool.active} "
+            f"waiting={pool.waiting} "
+            f"timeouts={pool.timeout_count}"
+        )
+
         raise HTTPException(
             status_code=503,
             detail="Database overloaded (connection pool timeout)"
         )
 
+    finally:
+        DB_QUERY_LATENCY.observe(time.monotonic() - start)
+
     elapsed = time.monotonic() - start
 
     print(
-        f"[POOL] max={pool.max_connections} "
+        f"[DB_OK] "
+        f"elapsed={elapsed:.3f}s "
         f"active={pool.active} "
-        f"waiting={pool.waiting} "
-        f"timeout_count={pool.timeout_count} "
+        f"waiting={pool.waiting}"
     )
 
     return {
@@ -81,3 +104,11 @@ async def db_query(item_id: int):
         "pool_active": pool.active,
         "pool_waiting": pool.waiting,
     }
+
+# Prometheus instrumented metrics exposed for collection by prometheus server
+@app.get("/metrics")
+def metrics():
+    return Response(
+        generate_latest(),
+        media_type=CONTENT_TYPE_LATEST
+    )
