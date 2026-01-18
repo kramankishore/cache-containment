@@ -1,11 +1,10 @@
 import asyncio
 import time
-
+import os
 import httpx
 from fastapi import FastAPI, HTTPException, Response
 
 from cache.cache import Cache
-
 
 from prometheus_client import (
     Counter,
@@ -14,13 +13,19 @@ from prometheus_client import (
     CONTENT_TYPE_LATEST,
 )
 
-
 # ----------------------------
 # Configuration
 # ----------------------------
 
-DB_URL = "http://localhost:8001/db_query"
-DB_TIMEOUT_SECONDS = 2.0
+DB_URL = os.getenv(
+    "DB_URL",
+    "http://localhost:8001/db_query"
+)
+
+DB_TIMEOUT_SECONDS = float(
+    os.getenv("DB_TIMEOUT_SECONDS", "2.0")
+)
+
 
 # ------------------------------
 # Prometheus metrics

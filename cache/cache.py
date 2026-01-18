@@ -5,7 +5,7 @@ from prometheus_client import Counter
 
 
 CONTAINED_CACHE = os.getenv("CONTAINED_CACHE", "0") == "1"
-MAX_CONCURRENT_LOADS = int(os.getenv("CACHE_MAX_LOADS", "5"))
+CACHE_MAX_LOADS = int(os.getenv("CACHE_MAX_LOADS", "5"))
 
 # ------------------------------
 # Prometheus metrics
@@ -47,14 +47,14 @@ class Cache:
 
         self._contained = CONTAINED_CACHE
         self._load_semaphore = (
-            asyncio.Semaphore(MAX_CONCURRENT_LOADS)
+            asyncio.Semaphore(CACHE_MAX_LOADS)
             if self._contained
             else None
         )
 
         print(
             f"[CACHE] mode={'CONTAINED' if self._contained else 'SPEED_FIRST'} "
-            f"max_loads={MAX_CONCURRENT_LOADS if self._contained else '∞'}"
+            f"max_loads={CACHE_MAX_LOADS if self._contained else '∞'}"
         )
 
 

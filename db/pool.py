@@ -27,28 +27,24 @@ class PoolTimeout(Exception):
     """Raised when a connection cannot be acquired within the timeout."""
     pass
 
+
 class ConnectionPool:
     """
     Application-side connection pool.
 
-    This models the finite willingness of the application to issue concurrent
-    database requests. It is intentionally simple and explicit.
+    Models finite concurrency and explicit queueing.
+    No environment awareness.
     """
 
     def __init__(self, max_connections: int):
         self._max_connections = max_connections
         self._semaphore = asyncio.Semaphore(max_connections)
 
-        # Metrics / state
         self._active = 0
         self._waiting = 0
 
-        # Timing metrics (seconds)
-        self._total_wait_time = 0.0
-        self._acquire_count = 0
         self._timeout_count = 0
 
-        # Protect counters
         self._lock = asyncio.Lock()
 
     @property
@@ -71,14 +67,10 @@ class ConnectionPool:
         """
         Acquire a connection from the pool.
 
-        If all connections are in use:
-        - the caller waits
-        - waiting is explicitly tracked
-        - optional timeout may raise PoolTimeout
+        Waiting and timeout behavior is observable via metrics.
         """
         start = time.monotonic()
 
-        # ---- waiting begins ----
         async with self._lock:
             self._waiting += 1
             DB_POOL_WAITING.set(self._waiting)
@@ -113,21 +105,17 @@ class ConnectionPool:
                     )
 
         finally:
-            wait_time = time.monotonic() - start
             async with self._lock:
                 self._waiting -= 1
-                self._total_wait_time += wait_time
-                self._acquire_count += 1
                 DB_POOL_WAITING.set(self._waiting)
 
-        # ---- acquisition succeeded ----
         async with self._lock:
             self._active += 1
             DB_POOL_ACTIVE.set(self._active)
 
         print(
             f"[POOL_ACQUIRE] "
-            f"waited={wait_time:.3f}s "
+            f"waited={time.monotonic() - start:.3f}s "
             f"active={self._active} "
             f"waiting={self._waiting}"
         )
@@ -151,8 +139,6 @@ class ConnectionPool:
 class _PoolConnection:
     """
     Represents a checked-out connection.
-
-    Intended to be used as an async context manager.
     """
 
     def __init__(self, pool: ConnectionPool):
