@@ -5,9 +5,9 @@ import httpx
 
 
 API_URL = "http://localhost:8000/item"
-RPS = 40                # requests per second
-DURATION_SECONDS = 200
-KEYSPACE = 500
+RPS = 50                # requests per second
+DURATION_SECONDS = 300
+KEYSPACE = 1000
 
 
 async def worker(client: httpx.AsyncClient, request_id: int):

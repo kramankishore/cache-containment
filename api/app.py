@@ -40,7 +40,7 @@ REQUEST_COUNT = Counter(
 REQUEST_LATENCY = Histogram(
     "api_request_latency_seconds",
     "API request latency",
-    buckets=(0.05, 0.1, 0.2, 0.5, 1, 2, 5)
+    buckets=(0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 20, 25, 30, 35)
 )
 
 
