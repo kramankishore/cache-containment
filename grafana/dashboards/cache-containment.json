@@ -46,7 +46,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "DS_PROMETHEUS"
       },
       "fieldConfig": {
         "defaults": {
@@ -125,7 +125,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "DS_PROMETHEUS"
           },
           "editorMode": "code",
           "expr": "sum(rate(api_requests_total[15s]))",
@@ -141,7 +141,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "DS_PROMETHEUS"
       },
       "fieldConfig": {
         "defaults": {
@@ -224,7 +224,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "DS_PROMETHEUS"
           },
           "editorMode": "code",
           "expr": "rate(cache_hits_total[15s])",
@@ -241,7 +241,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "DS_PROMETHEUS"
       },
       "fieldConfig": {
         "defaults": {
@@ -323,7 +323,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "DS_PROMETHEUS"
           },
           "editorMode": "code",
           "expr": "rate(cache_misses_total[15s])",
@@ -340,7 +340,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "DS_PROMETHEUS"
       },
       "fieldConfig": {
         "defaults": {
@@ -422,7 +422,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "DS_PROMETHEUS"
           },
           "editorMode": "code",
           "expr": "db_pool_active_connections",
@@ -438,7 +438,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "DS_PROMETHEUS"
       },
       "fieldConfig": {
         "defaults": {
@@ -521,7 +521,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "DS_PROMETHEUS"
           },
           "editorMode": "code",
           "expr": "db_pool_waiting_connections",
@@ -537,7 +537,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "DS_PROMETHEUS"
       },
       "fieldConfig": {
         "defaults": {
@@ -618,7 +618,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "DS_PROMETHEUS"
           },
           "editorMode": "code",
           "expr": "histogram_quantile(\n  0.95,\n  rate(api_request_latency_seconds_bucket[15s])\n)",
@@ -634,7 +634,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
+        "uid": "DS_PROMETHEUS"
       },
       "fieldConfig": {
         "defaults": {
@@ -713,7 +713,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
+            "uid": "DS_PROMETHEUS"
           },
           "editorMode": "code",
           "expr": "sum(rate(api_requests_total{status=~\"5..\"}[15s]))\n/\nsum(rate(api_requests_total[15s]))",
