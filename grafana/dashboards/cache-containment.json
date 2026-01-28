@@ -5,7 +5,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "10.4.2"
+      "version": "10.3.1"
     },
     {
       "type": "datasource",
@@ -41,11 +41,12 @@
   "graphTooltip": 0,
   "id": null,
   "links": [],
+  "liveNow": false,
   "panels": [
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DS_PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -59,6 +60,8 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
+            "axisSoftMax": 60,
+            "axisSoftMin": 0,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -94,13 +97,14 @@
                 "value": null
               }
             ]
-          }
+          },
+          "unitScale": true
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 9,
+        "w": 24,
         "x": 0,
         "y": 0
       },
@@ -121,10 +125,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DS_PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(api_requests_total[5s]))",
+          "expr": "sum(rate(api_requests_total[15s]))",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
@@ -137,11 +141,12 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DS_PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
           "color": {
+            "fixedColor": "light-green",
             "mode": "fixed"
           },
           "custom": {
@@ -150,6 +155,8 @@
             "axisColorMode": "text",
             "axisLabel": "",
             "axisPlacement": "auto",
+            "axisSoftMax": 60,
+            "axisSoftMin": 0,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,
@@ -189,7 +196,107 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 9
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "rate(cache_hits_total[15s])",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "rate(cache_hits_total[15s])",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Cache hits throughput (RPS)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 60,
+            "axisSoftMin": 0,
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unitScale": true
         },
         "overrides": []
       },
@@ -197,7 +304,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 9
       },
       "id": 4,
       "options": {
@@ -216,23 +323,24 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DS_PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "rate(cache_misses_total[30s])",
+          "expr": "rate(cache_misses_total[15s])",
           "instant": false,
-          "legendFormat": "__auto",
+          "interval": "",
+          "legendFormat": "rate(cache_misses_total[15s])",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Cache miss rate",
+      "title": "Cache misses throughput (RPS)",
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DS_PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -272,6 +380,8 @@
             }
           },
           "mappings": [],
+          "max": 10,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -284,7 +394,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unitScale": true
         },
         "overrides": []
       },
@@ -292,7 +403,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 17
       },
       "id": 2,
       "options": {
@@ -311,12 +422,12 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DS_PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "db_pool_active_connections",
           "instant": false,
-          "legendFormat": "__auto",
+          "legendFormat": "db_pool_active_connections",
           "range": true,
           "refId": "A"
         }
@@ -327,7 +438,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DS_PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -368,6 +479,8 @@
             }
           },
           "mappings": [],
+          "max": 10,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -380,7 +493,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unitScale": true
         },
         "overrides": []
       },
@@ -388,7 +502,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 17
       },
       "id": 3,
       "options": {
@@ -407,23 +521,23 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DS_PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "db_pool_waiting_requests",
+          "expr": "db_pool_waiting_connections",
           "instant": false,
-          "legendFormat": "__auto",
+          "legendFormat": "db_pool_waiting_connections",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "DB waiting requests",
+      "title": "DB waiting connections",
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DS_PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -476,7 +590,8 @@
                 "value": 80
               }
             ]
-          }
+          },
+          "unitScale": true
         },
         "overrides": []
       },
@@ -484,7 +599,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 25
       },
       "id": 1,
       "options": {
@@ -503,23 +618,23 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DS_PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(\n  0.95,\n  rate(api_request_latency_seconds_bucket[30s])\n)",
+          "expr": "histogram_quantile(\n  0.95,\n  rate(api_request_latency_seconds_bucket[15s])\n)",
           "instant": false,
-          "legendFormat": "__auto",
+          "legendFormat": "histogram_quantile(0.95,   rate(api_request_latency_seconds_bucket[15s]))",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "API p95 latency",
+      "title": "API p95 latency (seconds)",
       "type": "timeseries"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "DS_PROMETHEUS"
+        "uid": "${DS_PROMETHEUS}"
       },
       "fieldConfig": {
         "defaults": {
@@ -560,6 +675,8 @@
             }
           },
           "mappings": [],
+          "max": 10,
+          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -568,7 +685,8 @@
                 "value": null
               }
             ]
-          }
+          },
+          "unitScale": true
         },
         "overrides": []
       },
@@ -576,7 +694,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 25
       },
       "id": 6,
       "options": {
@@ -595,10 +713,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "DS_PROMETHEUS"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(api_requests_total{status=~\"5..\"}[30s]))\n/\nsum(rate(api_requests_total[30s]))",
+          "expr": "sum(rate(api_requests_total{status=~\"5..\"}[15s]))\n/\nsum(rate(api_requests_total[15s]))",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
@@ -623,6 +741,6 @@
   "timezone": "browser",
   "title": "Cache Containment",
   "uid": "afamfa3ims6wwc",
-  "version": 17,
+  "version": 1,
   "weekStart": ""
 }

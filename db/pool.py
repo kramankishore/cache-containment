@@ -13,7 +13,7 @@ DB_POOL_ACTIVE = Gauge(
 )
 
 DB_POOL_WAITING = Gauge(
-    "db_pool_waiting_requests",
+    "db_pool_waiting_connections",
     "Requests waiting for DB connection"
 )
 
