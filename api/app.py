@@ -2,7 +2,7 @@ import asyncio
 import time
 import os
 import httpx
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Response, Request
 
 from cache.cache import Cache
 
@@ -26,14 +26,28 @@ DB_TIMEOUT_SECONDS = float(
     os.getenv("DB_TIMEOUT_SECONDS", "2.0")
 )
 
-
 # ------------------------------
 # Prometheus metrics
 # ------------------------------
 
-REQUEST_COUNT = Counter(
+# Requests that ENTER the system
+REQUESTS_STARTED = Counter(
+    "api_requests_started_total",
+    "Total API requests started",
+    ["method", "path"]
+)
+
+# Requests that COMPLETE (success or failure)
+REQUESTS_COMPLETED = Counter(
     "api_requests_total",
-    "Total API requests",
+    "Total API requests completed",
+    ["method", "path", "status"]
+)
+
+# Explicit failures (guaranteed)
+REQUESTS_FAILED = Counter(
+    "api_requests_failed_total",
+    "Total API requests failed",
     ["method", "path", "status"]
 )
 
@@ -43,7 +57,6 @@ REQUEST_LATENCY = Histogram(
     buckets=(0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 20, 25, 30, 35)
 )
 
-
 # ----------------------------
 # Application setup
 # ----------------------------
@@ -51,7 +64,6 @@ REQUEST_LATENCY = Histogram(
 app = FastAPI(title="API Service")
 
 cache = Cache()
-
 
 # ----------------------------
 # Endpoints
@@ -66,10 +78,15 @@ async def health():
     }
 
 @app.get("/item/{item_id}")
-async def get_item(item_id: int):
+async def get_item(item_id: int, request: Request):
+    path = "/item/{id}"
+    method = request.method
+
+    # ---- request ARRIVAL ----
+    REQUESTS_STARTED.labels(method=method, path=path).inc()
+
     key = f"item:{item_id}"
     start = time.monotonic()
-
     status = "200"
 
     async def load_from_db():
@@ -101,22 +118,50 @@ async def get_item(item_id: int):
             "value": value,
         }
 
-    except HTTPException:
-        status = "503"
+    except asyncio.CancelledError:
+        status = "499"
+
+        REQUESTS_FAILED.labels(
+            method=method,
+            path=path,
+            status=status
+        ).inc()
+
+        raise
+
+    except HTTPException as e:
+        status = str(e.status_code)
+
+        REQUESTS_FAILED.labels(
+            method=method,
+            path=path,
+            status=status
+        ).inc()
+
+        raise
+
+    except Exception:
+        status = "500"
+
+        REQUESTS_FAILED.labels(
+            method=method,
+            path=path,
+            status=status
+        ).inc()
+
         raise
 
     finally:
         elapsed = time.monotonic() - start
 
-        # ---- Prometheus ----
         REQUEST_LATENCY.observe(elapsed)
-        REQUEST_COUNT.labels(
-            method="GET",
-            path="/item/{id}",
+
+        REQUESTS_COMPLETED.labels(
+            method=method,
+            path=path,
             status=status
         ).inc()
 
-        # ---- Logs (human-first) ----
         print(
             f"[API] "
             f"item={item_id} "
@@ -125,7 +170,6 @@ async def get_item(item_id: int):
             f"hit={hit if status == '200' else '-'} "
             f"miss={miss if status == '200' else '-'}"
         )
-
 
 @app.post("/_control/clear_cache")
 async def clear_cache():
@@ -137,7 +181,6 @@ async def clear_cache():
         "cache_misses": cache.misses,
     }
 
-# Prometheus instrumented metrics exposed for collection by prometheus server
 @app.get("/metrics")
 def metrics():
     return Response(

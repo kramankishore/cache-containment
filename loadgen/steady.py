@@ -6,7 +6,7 @@ import httpx
 
 API_URL = "http://localhost:8000/item"
 RPS = 50                # requests per second
-DURATION_SECONDS = 300
+DURATION_SECONDS = 2000
 KEYSPACE = 1000
 
 

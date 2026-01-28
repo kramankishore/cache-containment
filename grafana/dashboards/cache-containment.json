@@ -128,7 +128,7 @@
             "uid": "DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "sum(rate(api_requests_total[15s]))",
+          "expr": "sum(rate(api_requests_started_total[15s]))",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
@@ -203,7 +203,7 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
+        "w": 8,
         "x": 0,
         "y": 9
       },
@@ -302,8 +302,8 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
+        "w": 8,
+        "x": 8,
         "y": 9
       },
       "id": 4,
@@ -335,6 +335,105 @@
         }
       ],
       "title": "Cache misses throughput (RPS)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "DS_PROMETHEUS"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "dark-purple",
+            "mode": "fixed"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 10,
+            "axisSoftMin": 0,
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 9
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "DS_PROMETHEUS"
+          },
+          "editorMode": "code",
+          "expr": "cache_in_flight_loads",
+          "instant": false,
+          "legendFormat": "cache_in_flight_loads",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Cache in-flight load operations",
       "type": "timeseries"
     },
     {
@@ -479,7 +578,7 @@
             }
           },
           "mappings": [],
-          "max": 10,
+          "max": 70,
           "min": 0,
           "thresholds": {
             "mode": "absolute",
@@ -675,7 +774,7 @@
             }
           },
           "mappings": [],
-          "max": 10,
+          "max": 1,
           "min": 0,
           "thresholds": {
             "mode": "absolute",
@@ -716,9 +815,9 @@
             "uid": "DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "sum(rate(api_requests_total{status=~\"5..\"}[15s]))\n/\nsum(rate(api_requests_total[15s]))",
+          "expr": "(\n  sum(rate(api_requests_failed_total[15s]))\n  or vector(0)\n)\n/\nclamp_min(sum(rate(api_requests_started_total[15s])), 1)",
           "instant": false,
-          "legendFormat": "__auto",
+          "legendFormat": "sum(rate(api_requests_failed_total[15s])) /sum(rate(api_requests_started_total[15s]))",
           "range": true,
           "refId": "A"
         }
@@ -727,14 +826,14 @@
       "type": "timeseries"
     }
   ],
-  "refresh": "5s",
+  "refresh": "",
   "schemaVersion": 39,
   "tags": [],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-15m",
+    "from": "now-5m",
     "to": "now"
   },
   "timepicker": {},

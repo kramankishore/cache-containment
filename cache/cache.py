@@ -1,11 +1,16 @@
 import asyncio
 import os
 from typing import Any, Callable, Awaitable
-from prometheus_client import Counter
+from prometheus_client import Counter, Gauge
 
 
 CONTAINED_CACHE = os.getenv("CONTAINED_CACHE", "0") == "1"
 CACHE_MAX_LOADS = int(os.getenv("CACHE_MAX_LOADS", "5"))
+
+CACHE_IN_FLIGHT_LOADS = Gauge(
+    "cache_in_flight_loads",
+    "Number of concurrent cache loads"
+)
 
 # ------------------------------
 # Prometheus metrics
@@ -90,7 +95,11 @@ class Cache:
             )
 
             async with self._load_semaphore:
-                value = await loader()
+                CACHE_IN_FLIGHT_LOADS.inc()
+                try:
+                    value = await loader()
+                finally:
+                    CACHE_IN_FLIGHT_LOADS.dec()
 
         else:
             # Waiting happens downstream (DB pool)
